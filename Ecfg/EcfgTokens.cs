@@ -5,8 +5,8 @@ using System.Text;
 
 namespace Ecfg {
 
-    internal interface EcfgToken {
-        public void AppendEcfg(StringBuilder ecfg);
+    internal abstract class EcfgToken {
+        public abstract void AppendEcfg(StringBuilder ecfg);
         
         public string ToEcfg() {
             StringBuilder sb = new StringBuilder();
@@ -15,8 +15,8 @@ namespace Ecfg {
         }
     }
 
-    internal interface EcfgNodeToken : EcfgToken {
-        public EcfgNode? ToEcfgNode();
+    internal abstract class EcfgNodeToken : EcfgToken {
+        public abstract EcfgNode? ToEcfgNode();
     }
 
     internal class EcfgLiteralToken : EcfgToken {
@@ -30,7 +30,7 @@ namespace Ecfg {
             Value = value;
         }
 
-        public void AppendEcfg(StringBuilder ecfg) {
+        public override void AppendEcfg(StringBuilder ecfg) {
             ecfg.Append(Value);
         }
     }
@@ -38,17 +38,26 @@ namespace Ecfg {
     internal class EcfgObjectToken : EcfgNodeToken {
 
         // (BeforeKey)(Key)(BeforeColon):(AfterColon)(Node)(AfterNode)
-        public record EcfgObjectEntryToken(
-            EcfgLiteralToken BeforeKey,
-            EcfgLiteralToken Key,
-            EcfgLiteralToken BeforeColon,
-            EcfgLiteralToken AfterColon,
-            EcfgNodeToken NodeToken,
-            EcfgLiteralToken AfterNode) : EcfgToken {
+        public class EcfgObjectEntryToken : EcfgToken {
+            public readonly EcfgLiteralToken BeforeKey;
+            public readonly EcfgLiteralToken Key;
+            public readonly EcfgLiteralToken BeforeColon;
+            public readonly EcfgLiteralToken AfterColon;
+            public readonly EcfgNodeToken NodeToken;
+            public readonly EcfgLiteralToken AfterNode;
 
             public EcfgNode? Node;
 
-            public void AppendEcfg(StringBuilder ecfg) {
+            public EcfgObjectEntryToken(EcfgLiteralToken beforeKey, EcfgLiteralToken key, EcfgLiteralToken beforeColon, EcfgLiteralToken afterColon, EcfgNodeToken nodeToken, EcfgLiteralToken afterNode) {
+                BeforeKey = beforeKey;
+                Key = key;
+                BeforeColon = beforeColon;
+                AfterColon = afterColon;
+                NodeToken = nodeToken;
+                AfterNode = afterNode;
+            }
+
+            public override void AppendEcfg(StringBuilder ecfg) {
                 BeforeKey.AppendEcfg(ecfg);
                 Key.AppendEcfg(ecfg);
                 BeforeColon.AppendEcfg(ecfg);
@@ -74,7 +83,7 @@ namespace Ecfg {
             Suffix.AppendEcfg(ecfg);
         }
 
-        public void AppendEcfg(StringBuilder ecfg) {
+        public override void AppendEcfg(StringBuilder ecfg) {
             ecfg.Append('{');
             AppendBracketlessEcfg(ecfg);
             ecfg.Append('}');
@@ -94,7 +103,7 @@ namespace Ecfg {
             return children;
         }
 
-        public EcfgNode? ToEcfgNode() {
+        public override EcfgNode? ToEcfgNode() {
             return new EcfgObject(ToChildren());
         }
     }
@@ -102,14 +111,20 @@ namespace Ecfg {
     internal class EcfgListToken : EcfgNodeToken {
 
         // (Before)(Node)(After)
-        public record EcfgListEntryToken(
-            EcfgLiteralToken Before,
-            EcfgNodeToken NodeToken,
-            EcfgLiteralToken After) : EcfgToken {
+        public class EcfgListEntryToken : EcfgToken {
+            public readonly EcfgLiteralToken Before;
+            public readonly EcfgNodeToken NodeToken;
+            public readonly EcfgLiteralToken After;
 
             public EcfgNode? Node;
 
-            public void AppendEcfg(StringBuilder ecfg) {
+            public EcfgListEntryToken(EcfgLiteralToken before, EcfgNodeToken nodeToken, EcfgLiteralToken after) {
+                Before = before;
+                NodeToken = nodeToken;
+                After = after;
+            }
+
+            public override void AppendEcfg(StringBuilder ecfg) {
                 Before.AppendEcfg(ecfg);
                 NodeToken.AppendEcfg(ecfg);
                 After.AppendEcfg(ecfg);
@@ -126,7 +141,7 @@ namespace Ecfg {
             Suffix = new EcfgLiteralToken();
         }
 
-        public void AppendEcfg(StringBuilder ecfg) {
+        public override void AppendEcfg(StringBuilder ecfg) {
             ecfg.Append('[');
             foreach (EcfgListEntryToken entry in Entries)
                 entry.AppendEcfg(ecfg);
@@ -134,7 +149,7 @@ namespace Ecfg {
             ecfg.Append(']');
         }
 
-        public EcfgNode? ToEcfgNode() {
+        public override EcfgNode? ToEcfgNode() {
             List<EcfgNode?> nodes = new List<EcfgNode?>();
             foreach (EcfgListEntryToken entry in Entries) {
                 nodes.Add(entry.NodeToken.ToEcfgNode());
@@ -143,23 +158,23 @@ namespace Ecfg {
         }
     }
 
-    internal abstract class EcfgSingleValueToken : EcfgToken {
+    internal abstract class EcfgSingleValueNodeToken : EcfgNodeToken {
         public EcfgLiteralToken Value;
 
-        public EcfgSingleValueToken(EcfgLiteralToken value) {
+        public EcfgSingleValueNodeToken(EcfgLiteralToken value) {
             Value = value;
         }
 
-        public void AppendEcfg(StringBuilder ecfg) {
+        public override void AppendEcfg(StringBuilder ecfg) {
             Value.AppendEcfg(ecfg);
         }
     }
 
-    internal class EcfgValueToken : EcfgSingleValueToken, EcfgNodeToken {
+    internal class EcfgValueToken : EcfgSingleValueNodeToken {
         public EcfgValueToken(EcfgLiteralToken value) : base(value) {
         }
 
-        public EcfgNode? ToEcfgNode() {
+        public override EcfgNode? ToEcfgNode() {
             EcfgTokenizer.TryLiteralValueToNode(Value.Value.ToLower(), out EcfgNode? node);
             return node;
         }
@@ -175,13 +190,13 @@ namespace Ecfg {
             Value = value;
         }
 
-        public void AppendEcfg(StringBuilder ecfg) {
+        public override void AppendEcfg(StringBuilder ecfg) {
             ecfg.Append(Quote);
             Value.AppendEcfg(ecfg);
             ecfg.Append(Quote);
         }
 
-        public EcfgNode? ToEcfgNode() {
+        public override EcfgNode? ToEcfgNode() {
             StringBuilder str = new StringBuilder();
             for (int i = 0; i < Value.Value.Length; i++) {
                 if (Value.Value[i] == '\\')
@@ -193,29 +208,29 @@ namespace Ecfg {
         }
     }
 
-    internal class EcfgHexNumberToken : EcfgSingleValueToken, EcfgNodeToken {
+    internal class EcfgHexNumberToken : EcfgSingleValueNodeToken {
         public EcfgHexNumberToken(EcfgLiteralToken value) : base(value) {
         }
 
-        public EcfgNode? ToEcfgNode() {
+        public override EcfgNode? ToEcfgNode() {
             return new EcfgLong(long.Parse(Value.Value.Substring(2), NumberStyles.HexNumber));
         }
     }
 
-    internal class EcfgDecimalNumberToken : EcfgSingleValueToken, EcfgNodeToken {
+    internal class EcfgDecimalNumberToken : EcfgSingleValueNodeToken {
         public EcfgDecimalNumberToken(EcfgLiteralToken value) : base(value) {
         }
 
-        public EcfgNode? ToEcfgNode() {
+        public override EcfgNode? ToEcfgNode() {
             return new EcfgDouble(double.Parse(Value.Value, NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingSign));
         }
     }
 
-    internal class EcfgIntegerNumberToken : EcfgSingleValueToken, EcfgNodeToken {
+    internal class EcfgIntegerNumberToken : EcfgSingleValueNodeToken {
         public EcfgIntegerNumberToken(EcfgLiteralToken value) : base(value) {
         }
 
-        public EcfgNode? ToEcfgNode() {
+        public override EcfgNode? ToEcfgNode() {
             return new EcfgLong(long.Parse(Value.Value, NumberStyles.AllowLeadingSign));
         }
     }

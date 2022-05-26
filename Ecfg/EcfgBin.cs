@@ -60,8 +60,39 @@ namespace Ecfg {
             EmptyList
         }
 
-        private record KeyInfo(string Name, EcfgNodeType Type) {
+        private class KeyInfo {
+            public readonly string Name;
+            public readonly EcfgNodeType Type;
+
+            public KeyInfo(string name, EcfgNodeType type) {
+                Name = name;
+                Type = type;
+            }
+
             public KeyInfo(KeyValuePair<string, EcfgNode?> node) : this(node.Key, GetNodeType(node.Value)) { }
+
+            public override int GetHashCode() {
+                return new {Name, Type}.GetHashCode();
+            }
+
+            public static bool operator ==(KeyInfo lhs, KeyInfo rhs) {
+                return lhs.Name == rhs.Name && lhs.Type == rhs.Type;
+            }
+
+            public static bool operator !=(KeyInfo lhs, KeyInfo rhs) => !(lhs == rhs);
+
+            public override bool Equals(object? obj) {
+                if (ReferenceEquals(this, obj)) {
+                    return true;
+                }
+
+                if (ReferenceEquals(obj, null)) {
+                    return false;
+                }
+
+                if (obj is KeyInfo rhs) return this == rhs;
+                return false;
+            }
         }
 
         public static byte[] Serialize(EcfgNode? root, bool tryUseCompression = true) {
@@ -132,7 +163,7 @@ namespace Ecfg {
 
                 bool useCompression;
                 Stream dataStream;
-                
+
                 if (compressedData.Length >= writer.BaseStream.Length) {
                     useCompression = false;
                     dataStream = writer.BaseStream;

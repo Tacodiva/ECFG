@@ -55,10 +55,9 @@ namespace Ecfg {
                     if (listNode.List.Count != 0) {
                         listToken.Suffix = new EcfgLiteralToken(indent);
                         // Add a newline between the open [ and the first entry
-                        listToken.Entries[0] = listToken.Entries[0] with { Before = new EcfgLiteralToken("\n" + childIndent) };
+                        listToken.Entries[0].Before.Value = "\n" + IndentString(indentation + 1);
                         // Remove the comma after the last entry
-                        listToken.Entries[listToken.Entries.Count - 1] = listToken.Entries[listToken.Entries.Count - 1]
-                            with { After = new EcfgLiteralToken("\n") };
+                        listToken.Entries[listToken.Entries.Count - 1].After.Value = "\n";
                     }
                     return listToken;
                 case EcfgLong longNode:
@@ -71,14 +70,13 @@ namespace Ecfg {
                     if (!objNode.Empty) {
                         objToken.Suffix = new EcfgLiteralToken(indent);
                         // Add a newline between the open { and the first entry
-                        objToken.Entries[0] = objToken.Entries[0] with { BeforeKey = new EcfgLiteralToken("\n" + IndentString(indentation + 1)) };
+                        objToken.Entries[0].BeforeKey.Value = "\n" + IndentString(indentation + 1);
                         // Remove the comma after the last entry
-                        objToken.Entries[objToken.Entries.Count - 1] = objToken.Entries[objToken.Entries.Count - 1]
-                            with { AfterNode = new EcfgLiteralToken("\n") };
+                        objToken.Entries[objToken.Entries.Count - 1].AfterNode.Value = "\n";
                     }
                     return objToken;
                 case EcfgString strNode:
-                    char quote = strNode.Value.Contains('"') ? '\'' : '"';
+                    char quote = strNode.Value.Contains("\"") ? '\'' : '"';
                     char otherQuote = quote == '"' ? '\'' : '"';
                     StringBuilder literalString = new StringBuilder();
                     foreach (char c in strNode.Value) {
