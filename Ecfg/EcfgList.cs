@@ -93,28 +93,7 @@ namespace Ecfg {
         public void Set(int index, EcfgObject value) {
             List[index] = value;
         }
-
-        public T[] ToArray<T>() {
-            T[] arr = new T[List.Count];
-            for (int i = 0; i < List.Count; i++) {
-                EcfgNode? node = List[i];
-                if (node is T t) arr[i] = t;
-                else throw new EcfgException($"Node {node?.GetType()} cannot be cast to {typeof(T)}.");
-            }
-            return arr;
-        }
-
-        public T?[] ToNullableArray<T>() {
-            T?[] arr = new T?[List.Count];
-            for (int i = 0; i < List.Count; i++) {
-                EcfgNode? node = List[i];
-                if (node is T t) arr[i] = t;
-                else if (node == null) arr[i] = default(T);
-                else throw new EcfgException($"Node {node?.GetType()} cannot be cast to {typeof(T)}.");
-            }
-            return arr;
-        }
-
+        
         public override bool DeepEquals(EcfgNode? node) {
             if (node is EcfgList other) {
                 if (other.List.Count != List.Count)
