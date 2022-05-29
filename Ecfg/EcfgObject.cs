@@ -21,8 +21,8 @@ namespace Ecfg {
         }
 
         private T? GetNode<T>(string key) where T : EcfgNode {
-            Children.TryGetValue(key, out EcfgNode? value);
-            if (value == null) throw new EcfgException("\"" + key + "\" is null.");
+            if (!Children.TryGetValue(key, out EcfgNode? value)) throw new EcfgException($"Key \"{key}\" not found.");
+            if (value == null) throw new EcfgException($"\"{key}\" is null.");
             if (value is T cast) return cast;
             return null;
         }
