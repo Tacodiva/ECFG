@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Ecfg {
@@ -27,7 +28,7 @@ namespace Ecfg {
             return null;
         }
 
-        public bool TryGetValue(string key, out EcfgNode? node) {
+        public bool TryGetValue(string key, [MaybeNullWhen(false)] out EcfgNode node) {
             return Children.TryGetValue(key, out node);
         }
 
