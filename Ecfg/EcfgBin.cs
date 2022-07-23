@@ -7,24 +7,6 @@ using System.IO.Compression;
 namespace Ecfg {
     public static class EcfgBin {
 
-        // For compatibility with net48 :(
-        // (Blame MGCB)
-        private class EBinaryWriter : BinaryWriter {
-            public EBinaryWriter(Stream stream) : base(stream) { }
-
-            // Why are these protected in old versions? I have no clue.
-            public new void Write7BitEncodedInt(int value) {
-                base.Write7BitEncodedInt(value);
-            }
-        }
-        private class EBinaryReader : BinaryReader {
-            public EBinaryReader(Stream stream) : base(stream) { }
-
-            public new int Read7BitEncodedInt() {
-                return base.Read7BitEncodedInt();
-            }
-        }
-
         private static readonly byte[] Header = new byte[] { (byte)'E', (byte)'b', (byte)'i', (byte)'n' };
         private static readonly byte Version = 0x00;
 
@@ -106,8 +88,8 @@ namespace Ecfg {
         }
 
         public static void Serialize(EcfgNode? root, Stream stream, bool tryUseCompression = true) {
-            EBinaryWriter writer = new EBinaryWriter(stream);
-            EBinaryWriter baseWriter = writer;
+            BinaryWriter writer = new BinaryWriter(stream);
+            BinaryWriter baseWriter = writer;
 
             List<Tuple<KeyInfo, int>> keyUses = new List<Tuple<KeyInfo, int>>();
             EnumerateKeys(root, keyUses);
@@ -124,7 +106,7 @@ namespace Ecfg {
 
             if (tryUseCompression) {
                 MemoryStream ms = new MemoryStream();
-                writer = new EBinaryWriter(ms);
+                writer = new BinaryWriter(ms);
             } else {
                 // If trying to use compression, root type and compression are written later
                 writer.Write((byte)rootType);
@@ -195,7 +177,7 @@ namespace Ecfg {
         }
 
         public static EcfgNode? Deserialize(Stream stream) {
-            EBinaryReader reader = new EBinaryReader(stream);
+            BinaryReader reader = new BinaryReader(stream);
 
             // Validate header
             byte[] header = reader.ReadBytes(4);
@@ -212,7 +194,7 @@ namespace Ecfg {
             bool compression = (rootTypeByte & 0x80) != 0;
 
             if (compression) {
-                reader = new EBinaryReader(new DeflateStream(stream, CompressionMode.Decompress));
+                reader = new BinaryReader(new DeflateStream(stream, CompressionMode.Decompress));
             }
 
             // Load keys
@@ -234,7 +216,7 @@ namespace Ecfg {
             return DeserializeNode(rootType, reader, keys);
         }
 
-        private static void WriteStandardASCII(string str, EBinaryWriter writer) {
+        private static void WriteStandardASCII(string str, BinaryWriter writer) {
             for (int i = 0; i < str.Length; i++) {
                 char c = str[i];
                 if (c >= 128) throw new EcfgException($"Non-standard ASCII character '{c}' in string.");
@@ -242,7 +224,7 @@ namespace Ecfg {
             }
         }
 
-        private static string ReadStandardASCII(EBinaryReader reader) {
+        private static string ReadStandardASCII(BinaryReader reader) {
             byte b = 1;
             StringBuilder sb = new StringBuilder();
             while ((b & 0x80) == 0) {
@@ -335,7 +317,7 @@ namespace Ecfg {
             throw new EcfgException($"Can't serialize {node.GetType()}.");
         }
 
-        private static void SerializeNode(EcfgNode? node, EcfgNodeType nodeType, EBinaryWriter bin, List<KeyInfo> keys) {
+        private static void SerializeNode(EcfgNode? node, EcfgNodeType nodeType, BinaryWriter bin, List<KeyInfo> keys) {
             switch (node) {
                 case EcfgBoolean boolNode:
                     bin.Write(boolNode.Value);
@@ -420,7 +402,7 @@ namespace Ecfg {
             }
         }
 
-        private static EcfgNode? DeserializeNode(EcfgNodeType nodeType, EBinaryReader bin, List<KeyInfo> keys) {
+        private static EcfgNode? DeserializeNode(EcfgNodeType nodeType, BinaryReader bin, List<KeyInfo> keys) {
             switch (nodeType) {
                 case EcfgNodeType.Null:
                     return null;
